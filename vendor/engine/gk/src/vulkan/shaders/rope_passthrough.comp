@@ -1,0 +1,36 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "gk_common.glsl"
+
+layout(local_size_x = 256) in;
+
+layout(binding = 1, std430) readonly buffer S0 { uint s0[]; };
+layout(binding = 2, std430) readonly buffer S1 { uint s1[]; };
+layout(binding = 3, std430) readonly buffer S2 { uint s2[]; };
+layout(binding = 4, std430) buffer D { uint d[]; };
+
+GK_QUANT_READER(a, s0)
+GK_FLOAT_READER(b, s1)
+GK_FLOAT_READER(c, s2)
+GK_WRITER(o, d)
+
+void main() {
+    const uint k = gl_GlobalInvocationID.x;
+    if (k >= P.n) {
+        return;
+    }
+
+    const uvec4 x = gk_decompose(k, P.dst);
+
+    // channels at or past n_dims are not rotated and are copied through
+    const uint width = P.dst.ne.x - uint(P.i0[0]);
+    const uint ir = k / width;
+    const uint i0 = uint(P.i0[0]) + k % width;
+
+    const uint i1 = ir % P.dst.ne.y;
+    const uint i2 = (ir / P.dst.ne.y) % P.dst.ne.z;
+    const uint i3 = ir / (P.dst.ne.y * P.dst.ne.z);
+
+    o_set(P.dst, i0, i1, i2, i3, a_getq(P.src0, i0, i1, i2, i3));
+}

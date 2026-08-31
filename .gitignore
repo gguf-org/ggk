@@ -1,0 +1,23 @@
+# build output
+build/
+build-test/
+dist/
+*.egg-info/
+*.log
+
+# python
+__pycache__/
+*.pyc
+
+# engine artifacts installed into the package by the build
+src/ggk/server/bin/
+src/ggk/diffuser/bin/
+src/ggk/editor/lib/
+
+# engine test build
+vendor/build-eng/
+vendor/build-fa/
+vendor/build-gktest/
+
+# macOS
+.DS_Store

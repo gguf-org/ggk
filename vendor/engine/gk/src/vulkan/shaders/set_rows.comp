@@ -1,0 +1,36 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "gk_common.glsl"
+
+// Writes the rows of src0 into the destination at the row indices src1 names -
+// how a KV cache is filled. The destination keeps its own type, which here
+// means f32: a narrower one would need a read-modify-write of a shared word.
+
+layout(local_size_x = 256) in;
+
+layout(binding = 1, std430) readonly buffer S0 { uint s0[]; };
+layout(binding = 2, std430) readonly buffer S1 { uint s1[]; };
+layout(binding = 4, std430) buffer D { uint d[]; };
+
+GK_QUANT_READER(a, s0)
+GK_WRITER(o, d)
+
+void main() {
+    const uint k = gl_GlobalInvocationID.x;
+    if (k >= P.n) {
+        return;
+    }
+
+    const uvec4 x = gk_decompose(k, P.src0);
+
+    const uint off = P.src1.base + x.y * P.src1.nb.x
+                   + (x.z % P.src1.ne.y) * P.src1.nb.y
+                   + (x.w % P.src1.ne.z) * P.src1.nb.z;
+
+    // i64 indices are read as their low word: a row number never approaches
+    // 2^31, and reading the pair would cost a second load per element.
+    const uint row = P.flags != 0u ? s1[off >> 2] : uint(int(s1[off >> 2]));
+
+    o_set(P.dst, x.x, row, x.z, x.w, a_getq(P.src0, x.x, x.y, x.z, x.w));
+}

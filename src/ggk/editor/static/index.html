@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GGUF</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <span class="logo">Editor <span id="app-version">–</span></span>
+
+    <button id="file-btn" title="Open a .gguf file">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      Open File
+    </button>
+
+    <span id="file-label">No file selected</span>
+
+    <button id="undo-btn" class="btn" style="font-size:12px;padding:5px 12px;" title="Undo last change" disabled>
+      Undo
+    </button>
+
+    <button id="redo-btn" class="btn" style="font-size:12px;padding:5px 12px;" title="Redo last undone change" disabled>
+      Redo
+    </button>
+
+    <button id="reset-btn" class="btn" style="font-size:12px;padding:5px 12px;" title="Reset all pending changes" disabled>
+      Reset
+    </button>
+
+    <button id="save-btn" class="btn btn-primary" style="font-size:12px;padding:5px 12px;" disabled>
+      Save Changes
+    </button>
+
+    <button id="theme-btn" title="Toggle dark/light mode">
+      <svg id="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Toolbar (search) -->
+  <div id="toolbar">
+    <input id="search-input" type="text" placeholder="Search metadata keys, values, tensor names…" />
+    <button class="btn" id="clear-search-btn">Clear</button>
+  </div>
+
+  <!-- Error banner -->
+  <div id="error-banner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span id="error-text"></span>
+  </div>
+
+  <!-- Main content -->
+  <div id="content">
+
+    <!-- Landing -->
+    <div id="landing">
+      <div class="icon">📦</div>
+      <h2>Open a GGUF file to get started</h2>
+      <p>Pick a <code>.gguf</code> model file on this machine to inspect and edit its metadata and tensors, and quantize it with the built-in engine.</p>
+      <button class="btn btn-primary open-btn" id="landing-open-btn">Choose File…</button>
+      <p class="landing-drop-hint">…or drag &amp; drop a <code>.gguf</code> / <code>.safetensors</code> file anywhere on this page.</p>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <span>Parsing GGUF file…</span>
+    </div>
+
+    <!-- Data view -->
+    <div id="data-view" style="display:none">
+
+      <!-- Stats bar -->
+      <div id="stats">
+        <span>Version: <strong id="stat-version">—</strong></span>
+        <span>Metadata: <strong id="stat-meta">—</strong></span>
+        <span>Tensors: <strong id="stat-tensors">—</strong></span>
+        <span>File size: <strong id="stat-size">—</strong></span>
+        <span id="stat-new-size" style="display:none">New size: <strong id="stat-new-size-val">—</strong></span>
+        <span class="pending-badge" id="pending-badge" style="display:none" title="Structural changes are applied when you save — the file is rebuilt with tensor data rewritten"></span>
+        <span class="version-badge" id="stat-gguf-ver">GGUF v?</span>
+      </div>
+
+      <div class="quantizer-offline" id="quantizer-offline" style="display:none"></div>
+
+      <!-- Metadata section -->
+      <div class="section-header">
+        <h2>Metadata</h2>
+        <span class="count" id="meta-count">0</span>
+        <button class="btn" id="add-meta-btn" style="margin-left:auto;font-size:11px;padding:3px 9px;" disabled>+ Add Row</button>
+      </div>
+      <table id="meta-table">
+        <thead>
+          <tr>
+            <th style="width:240px">Key</th>
+            <th>Value</th>
+            <th style="width:70px">Type</th>
+            <th style="width:70px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="meta-body"></tbody>
+      </table>
+      <div id="meta-empty" class="no-results" style="display:none">No metadata matches your search.</div>
+
+      <!-- Tensors section -->
+      <div class="section-header">
+        <h2>Tensors</h2>
+        <span class="count" id="tensor-count">0</span>
+        <span style="margin-left:auto"></span>
+        <button class="btn section-btn" id="import-gguf-btn" title="Copy tensors from another GGUF file into this one" disabled>Import from GGUF…</button>
+        <button class="btn section-btn" id="zero-tensor-btn" title="Add a new zero-filled tensor" disabled>Zero Tensor…</button>
+        <button class="btn section-btn" id="merge-btn" title="Concatenate the selected tensors along their last axis into one tensor" disabled>Merge Selected</button>
+      </div>
+
+      <!-- Quantization drawer -->
+      <div id="quant-drawer">
+        <button id="quant-toggle">
+          <span>Quantization</span>
+          <span id="quant-badge" class="quant-count-badge" style="display:none">0</span>
+          <span style="margin-left:auto"></span>
+          <span id="quant-chevron" class="fr-chevron">▾</span>
+        </button>
+        <div id="quant-panel" style="display:none">
+          <p class="fr-hint">Pick a batch weight type for all eligible tensors and/or per-tensor precisions in the table below. Conversion runs after your edits are saved, producing a single output file.</p>
+          <div class="quant-row">
+            <label>Weight type
+              <select id="quant-batch-type"></select>
+            </label>
+            <label>Device
+              <select id="quant-device"></select>
+            </label>
+            <label>Threads
+              <input type="number" id="quant-threads" min="0" step="1" value="0" style="width:70px" title="0 = auto-detect" />
+            </label>
+            <button class="btn" id="quant-clear-btn" style="margin-left:auto;font-size:11px;">Clear precision changes</button>
+          </div>
+          <p class="quant-note" id="quant-type-note" style="display:none"></p>
+          <p class="quant-note" id="quant-batch-stats" style="display:none"></p>
+          <p class="quant-warn" id="quant-skipped" style="display:none"></p>
+        </div>
+      </div>
+
+      <!-- Find & Replace drawer -->
+      <div id="fr-drawer">
+        <button id="fr-toggle">
+          <span>Find &amp; Replace in Names</span>
+          <span id="fr-badge" class="fr-badge" style="display:none">0</span>
+          <span style="margin-left:auto"></span>
+          <span id="fr-chevron" class="fr-chevron">▾</span>
+        </button>
+        <div id="fr-panel" style="display:none">
+          <p class="fr-hint">Renames every matching tensor across the file — independent of the search box above.</p>
+          <div class="fr-inputs">
+            <input type="text" id="fr-find" placeholder="Find in tensor names…" />
+            <input type="text" id="fr-replace" placeholder="Replace with…" />
+          </div>
+          <div class="fr-controls">
+            <label><input type="checkbox" id="fr-match-case" /> Match case</label>
+            <label><input type="checkbox" id="fr-regex" /> Regex</label>
+            <span style="margin-left:auto"></span>
+            <button class="btn" id="fr-clear-btn" style="display:none">Clear</button>
+            <button class="btn" id="fr-apply-btn" title="Rename every matching tensor" disabled>Replace All</button>
+          </div>
+          <p id="fr-status" class="fr-status" style="display:none"></p>
+        </div>
+      </div>
+
+      <table id="tensor-table">
+        <thead>
+          <tr>
+            <th style="width:22px"></th>
+            <th style="width:26px"></th>
+            <th>Name</th>
+            <th style="width:140px">Shape</th>
+            <th style="width:76px">Type</th>
+            <th style="width:104px">Precision</th>
+            <th style="width:70px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tensor-body"></tbody>
+      </table>
+      <div id="tensor-empty" class="no-results" style="display:none">No tensors match your search.</div>
+
+    </div><!-- /data-view -->
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<div id="save-toast">Changes saved!</div>
+
+<!-- Drag & drop target overlay -->
+<div id="drop-overlay">
+  <div id="drop-inner">
+    <div class="drop-icon">📂</div>
+    <div>Drop the model file to open it</div>
+    <div class="drop-sub">.gguf / .safetensors — copied to the local server, then opened</div>
+  </div>
+</div>
+
+<!-- File browse modal (open / import source picking) -->
+<div id="browse-overlay" class="modal-overlay">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="browse-title">Open GGUF file</div>
+    <div class="modal-body">
+      <div class="path-input-row">
+        <input type="text" id="browse-path-input" class="modal-input" placeholder="/path/to/model.gguf or a directory" />
+        <button class="btn" id="browse-go-btn">Go</button>
+      </div>
+      <div class="browse-path" id="browse-current">—</div>
+      <ul class="browse-list" id="browse-list"></ul>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-note">Files are opened from this machine's disk — nothing is uploaded.</span>
+      <button class="btn" id="browse-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import from GGUF modal -->
+<div id="import-overlay" class="modal-overlay">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="import-modal-title">Import tensors</div>
+    <div class="modal-toolbar">
+      <input type="text" id="import-filter" class="modal-filter" placeholder="Filter tensors…" />
+      <button class="btn" id="import-toggle-all-btn">Toggle All</button>
+    </div>
+    <div class="modal-body">
+      <table id="import-table">
+        <tbody id="import-body"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-note" id="import-selected-note">0 selected — data is copied when you save</span>
+      <button class="btn" id="import-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="import-confirm-btn" disabled>Add Selected</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zero tensor modal -->
+<div id="zero-overlay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">New zero-filled tensor</div>
+    <div class="modal-body modal-form">
+      <label class="modal-label">Name
+        <input type="text" id="zero-name" class="modal-input" placeholder="my.new.tensor" />
+      </label>
+      <label class="modal-label">Precision
+        <select id="zero-dtype" class="modal-input"></select>
+      </label>
+      <label class="modal-label">Shape
+        <input type="text" id="zero-shape" class="modal-input" placeholder="4096, 32" title="Comma-separated dimensions" />
+        <span class="modal-note" id="zero-block-hint" style="display:none"></span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <span style="flex:1"></span>
+      <button class="btn" id="zero-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="zero-confirm-btn">Add Tensor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save destination modal -->
+<div id="dest-overlay" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="dest-title">Save as…</div>
+    <div class="modal-body modal-form">
+      <label class="modal-label">Output path
+        <input type="text" id="dest-path" class="modal-input" spellcheck="false" />
+      </label>
+      <span class="modal-note" id="dest-note"></span>
+    </div>
+    <div class="modal-footer">
+      <span style="flex:1"></span>
+      <button class="btn" id="dest-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="dest-confirm-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job progress overlay (save / quantize) -->
+<div id="save-overlay">
+  <div id="save-modal">
+    <div id="save-modal-icon">💾</div>
+    <div id="save-modal-title">Saving file…</div>
+    <div id="save-progress-wrap">
+      <div id="save-progress-bar"></div>
+    </div>
+    <div id="save-progress-text">Starting…</div>
+    <div id="job-log" style="display:none"></div>
+    <div class="job-actions">
+      <button class="btn" id="job-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="job-close-btn" style="display:none">Close</button>
+    </div>
+    <div id="save-warning">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      The job runs in the local gguf-editor server — closing this tab does not stop it.
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

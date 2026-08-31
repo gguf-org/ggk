@@ -1,0 +1,64 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "gk_common.glsl"
+
+// One workgroup per destination row. i[0]: 0 = rms_norm, 1 = norm,
+// 2 = l2_norm; f[0] = eps.
+
+layout(local_size_x = 256) in;
+
+layout(binding = 1, std430) readonly buffer S0 { uint s0[]; };
+layout(binding = 4, std430) buffer D { uint d[]; };
+
+GK_QUANT_READER(a, s0)
+GK_WRITER(o, d)
+GK_REDUCTION(256u)
+
+void main() {
+    const uint ir = gl_WorkGroupID.x;
+    const uint tid = gl_LocalInvocationID.x;
+
+    const uint i1 = ir % P.dst.ne.y;
+    const uint i2 = (ir / P.dst.ne.y) % P.dst.ne.z;
+    const uint i3 = ir / (P.dst.ne.y * P.dst.ne.z);
+
+    const uint n = P.dst.ne.x;
+    const float eps = P.f01[0];
+
+    if (P.i0[0] == 1) {
+        float sum = 0.0;
+        for (uint i = tid; i < n; i += 256u) {
+            sum += a_getq(P.src0, i, i1, i2, i3);
+        }
+        const float mean = gk_block_sum(sum, tid) / float(n);
+
+        // the variance is taken about the mean rather than as E[x^2] - E[x]^2,
+        // which cancels catastrophically when the mean dominates
+        float var = 0.0;
+        for (uint i = tid; i < n; i += 256u) {
+            const float c = a_getq(P.src0, i, i1, i2, i3) - mean;
+            var += c * c;
+        }
+        const float scale = inversesqrt(gk_block_sum(var, tid) / float(n) + eps);
+
+        for (uint i = tid; i < n; i += 256u) {
+            o_set(P.dst, i, i1, i2, i3, (a_getq(P.src0, i, i1, i2, i3) - mean) * scale);
+        }
+        return;
+    }
+
+    float sumsq = 0.0;
+    for (uint i = tid; i < n; i += 256u) {
+        const float v = a_getq(P.src0, i, i1, i2, i3);
+        sumsq += v * v;
+    }
+    const float total = gk_block_sum(sumsq, tid);
+
+    const float scale = P.i0[0] == 0 ? inversesqrt(total / float(n) + eps)
+                                     : inversesqrt(max(total, eps));
+
+    for (uint i = tid; i < n; i += 256u) {
+        o_set(P.dst, i, i1, i2, i3, a_getq(P.src0, i, i1, i2, i3) * scale);
+    }
+}

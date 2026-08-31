@@ -1,0 +1,16 @@
+build/
+build-*/
+cmake-build-*/
+.cache/
+compile_commands.json
+
+# web UI bundle, provisioned separately (see README)
+ui/dist/
+
+*.gguf
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe

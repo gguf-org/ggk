@@ -1,0 +1,39 @@
+#version 450
+#extension GL_GOOGLE_include_directive : require
+
+#include "gk_common.glsl"
+
+layout(local_size_x = 256) in;
+
+layout(binding = 1, std430) readonly buffer S0 { uint s0[]; };
+layout(binding = 2, std430) readonly buffer S1 { uint s1[]; };
+layout(binding = 3, std430) readonly buffer S2 { uint s2[]; };
+layout(binding = 4, std430) buffer D { uint d[]; };
+
+GK_QUANT_READER(a, s0)
+GK_FLOAT_READER(b, s1)
+GK_FLOAT_READER(c, s2)
+GK_WRITER(o, d)
+
+void main() {
+    const uint k = gl_GlobalInvocationID.x;
+    if (k >= P.n) {
+        return;
+    }
+
+    const uvec4 x = gk_decompose(k, P.dst);
+
+    const float va = a_getq(P.src0, x.x, x.y, x.z, x.w);
+    const float vb = b_get(P.src1, x.x % P.src1.ne.x, x.y % P.src1.ne.y,
+                                   x.z % P.src1.ne.z, x.w % P.src1.ne.w);
+
+    float r;
+    switch (P.i0[0]) {
+        case 0:  r = va + vb; break;
+        case 1:  r = va - vb; break;
+        case 2:  r = va * vb; break;
+        default: r = va / vb; break;
+    }
+
+    o_set(P.dst, x.x, x.y, x.z, x.w, r);
+}
