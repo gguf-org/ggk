@@ -6,6 +6,8 @@ editor with a built-in quantizer — three panels on one GUI, powered by one
 unified engine compiled in a single build on top of **gk**, an independent
 tensor library. There is no ggml anywhere in the tree.
 
+[<img src="https://raw.githubusercontent.com/calcuis/gguf-connector/master/gguf.gif" width="128" height="128">]
+
 Full documentation is in [`docs/`](docs/README.md) — installation, the CLI,
 each panel's tabs and API, supported models, worked examples, the engine
 internals, and troubleshooting.
