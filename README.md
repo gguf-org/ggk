@@ -1,8 +1,6 @@
 # ggk
 
-<img src="https://raw.githubusercontent.com/calcuis/cgg/master/cgg.gif" width="128" height="128">
-<img src="https://raw.githubusercontent.com/calcuis/gguf-connector/master/gguf.gif" width="128" height="128">
-<img src="https://raw.githubusercontent.com/calcuis/chatgpt-model-selector/master/callgg.gif" width="128" height="128">
+<img src="https://raw.githubusercontent.com/calcuis/cgg/master/cgg.gif" width="128" height="128"><img src="https://raw.githubusercontent.com/calcuis/gguf-connector/master/gguf.gif" width="128" height="128"><img src="https://raw.githubusercontent.com/calcuis/chatgpt-model-selector/master/callgg.gif" width="128" height="128">
 
 One package for working with GGUF models locally: an OpenAI-compatible LLM
 server, a diffusion image/video/audio generator and a GGUF metadata/tensor
