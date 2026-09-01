@@ -128,3 +128,6 @@ See [`docs/development.md`](docs/development.md) for the layout in detail and
 The editor's quantizer stays independent — its `qz_*` codec is compiled both
 into the quantizer library the editor drives and into gk itself, so the
 encoder and the runtimes' decoder can never disagree about a GGUF block.
+
+## Reference
+[pig engine - the new gguf compute kernels (gk)](https://github.com/gguf-io/gk)
