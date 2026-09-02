@@ -128,6 +128,7 @@ Leaving `--lyrics` empty produces instrumental output.
 | PuLID | `--pulid-weights`, `--pulid-id-embedding`, `--pulid-id-weight` |
 | Upscalers (ESRGAN) | `--upscale-model`, `--upscale-repeats`, `--upscale-tile-size` |
 | Hires fix | `--hires` and the `--hires-*` family |
+| PIG adapter | `--llm` for universal clip and `--llm-adapter` for adapter |
 
 ## On-the-fly quantization
 
