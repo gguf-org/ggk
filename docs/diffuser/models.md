@@ -43,6 +43,7 @@ or download a GGUF/safetensors build.
 | **ACE-Step** | audio generation, with lyrics |
 | **MiniMax Music 3** | audio generation |
 | **ESRGAN** | upscalers (`--mode upscale`, `--upscale-model`, hires fix) |
+| **LLaDA** | t2i or i2i (optional) |
 
 Derivatives built on these backbones — Turbo, LCM, Lightning, Hyper,
 NitroFusion, distilled and Schnell variants — load as their base family. What
