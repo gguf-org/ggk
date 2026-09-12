@@ -131,3 +131,5 @@ encoder and the runtimes' decoder can never disagree about a GGUF block.
 
 ## Reference
 [pig engine - the new gguf compute kernels (gk)](https://github.com/gguf-io/gk)
+
+[gguf trainer - how to train your own adapter](https://huggingface.co/gguf-org/trainer)
