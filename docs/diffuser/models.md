@@ -45,6 +45,7 @@ or download a GGUF/safetensors build.
 | **ESRGAN** | upscalers (`--mode upscale`, `--upscale-model`, hires fix) |
 | **SenseNova-U1.5** | image/edit |
 | **LLaDA** | t2i or i2i (optional) |
+| **YuE2** | audio generation, with lyrics |
 
 Derivatives built on these backbones — Turbo, LCM, Lightning, Hyper,
 NitroFusion, distilled and Schnell variants — load as their base family. What
@@ -77,6 +78,8 @@ its conditioner from the detected family:
 | Lens | `--llm` = GPT-OSS 20B | |
 | Ideogram 4, Lingbot Video, Boogu, Sefi, Krea 2, Mage Flow, MiniMax H3 | `--llm` = Qwen3-VL | |
 | ACE-Step | built-in lyric tokenizer | `--lyrics`, `--audio-duration` |
+| LLaDA | support pig-clip + adapter | + `--llm_vision` for edit|
+| YuE2 | built-in lyric tokenizer | `--lyrics`, `--audio-duration` |
 
 A **VAE** (`--vae`) is needed whenever it is not inside the main file — which
 is most of the time for standalone `--diffusion-model` weights. Chroma
@@ -114,6 +117,7 @@ frame interpolation uses `-i` and `--end-img`.
 | Family | Flags |
 | ------ | ----- |
 | ACE-Step | `--lyrics`, `--audio-duration` |
+| YuE2 | `--lyrics`, `--audio-duration` |
 | MiniMax Music 3 | `--lyrics`, `--audio-vae` |
 | LTX-AV (audio track) | `--audio-vae` |
 
