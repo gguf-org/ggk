@@ -25,7 +25,7 @@ change engines without an edit.
 It compiles the engine from source. There are no pre-built binary wheels,
 because the kernels are built for the backends you ask for. CPU takes
 minutes; CUDA takes few more minutes (unlike ggml which takes hours to build,
-gk takes around 5 minutes only).
+gk takes around 5 minutes only, good for rapid test and development).
 
 ### Why is my GPU not being used?
 
